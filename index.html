@@ -68,7 +68,7 @@ details.connection{margin-top:12px;border:1px solid var(--line);border-radius:13
 <body>
 <div id="loginScreen" class="login-screen">
   <div class="login-card">
-    <div class="login-brand"><div class="brand-icon">妙</div><div><h1>小妙云端后台</h1><p style="margin:3px 0 0">邀请码、设备与版本管理｜电脑和手机通用｜1.0.2</p></div></div>
+    <div class="login-brand"><div class="brand-icon">妙</div><div><h1>小妙云端后台</h1><p style="margin:3px 0 0">邀请码、设备与版本管理｜电脑和手机通用｜1.0.4</p></div></div>
     <div class="security-note">后台密钥只在当前页面内存中使用，刷新或关闭页面后需要重新输入。网页不会保存后台密钥，也不包含 service_role / secret key。</div>
     <label for="loginKey">后台密钥</label>
     <div class="password-row">
@@ -97,7 +97,7 @@ details.connection{margin-top:12px;border:1px solid var(--line);border-radius:13
 <div id="app" class="hidden">
   <header class="hero">
     <div class="hero-inner">
-      <div><h1>小妙版人才资源分配助手</h1><p>云端管理后台 1.0.2｜连接修正与批量管理</p></div>
+      <div><h1>小妙版人才资源分配助手</h1><p>云端管理后台 1.0.4｜统一接口稳定版</p></div>
       <div class="hero-actions"><span class="status-text"><span class="status-dot"></span>已连接</span><button id="lockButton" class="secondary" type="button">锁定</button></div>
     </div>
   </header>
@@ -116,7 +116,7 @@ details.connection{margin-top:12px;border:1px solid var(--line);border-radius:13
         <h2>后台状态</h2>
         <div id="sideStatus" class="status ok">后台已解锁。</div>
         <h3>快速说明</h3>
-        <div class="notice">随机邀请码默认采用 <span class="code">XM-XXXXX-XXXXX</span>。公会名称、分发对象等信息只保存在后台标签和分组中，不写入邀请码本身。</div>
+        <div class="notice">随机邀请码由云端生成独立中性批次。公会名称、分发对象等信息只保存在后台标签和分组中，不写入邀请码本身。</div>
         <h3>连接项目</h3>
         <div id="projectDisplay" class="masked"></div>
         <div class="actions" style="margin-top:10px"><button id="refreshAllSide" class="secondary" type="button">刷新全部</button></div>
@@ -165,11 +165,11 @@ details.connection{margin-top:12px;border:1px solid var(--line);border-radius:13
         <section id="section-generate" class="app-section hidden">
           <div class="card">
             <h2>随机生成邀请码</h2>
-            <div class="notice">邀请码由 Supabase 服务端随机生成。对外仍是 <span class="code">XM-XXXXX-XXXXX</span>，不会暴露公会名称；你可以在后台按“公会/批次”一次生成多枚，并用分组、标签和备注统一管理。</div>
+            <div class="notice">邀请码由 Supabase 服务端生成独立中性随机批次，不写入公会缩写；你可以按“公会/批次”一次生成多枚，并用分组、标签和备注统一管理。</div>
             <div id="groupPresetBar" class="selection-bar"><span class="badge">已有分组将在连接后显示</span></div>
             <div class="row">
               <div><label for="genCount">生成数量</label><input id="genCount" type="number" min="1" max="500" value="10"></div>
-              <div><label for="genPrefix">中性前缀</label><input id="genPrefix" maxlength="6" value="XM" placeholder="例如 XM"></div>
+              <div><label>邀请码规则</label><input value="云端自动生成中性随机码" readonly></div>
               <div><label for="genMaxDevices">设备上限</label><input id="genMaxDevices" type="number" min="1" max="10" value="1"></div>
             </div>
             <div class="row">
@@ -275,63 +275,91 @@ function loadConnection(){
   $('anonKey').value=localStorage.getItem('xm_mobile_admin_anon')||DEFAULT_ANON;
 }
 function saveConnection(){localStorage.setItem('xm_mobile_admin_url',baseUrl());localStorage.setItem('xm_mobile_admin_anon',anonKey());toast('公开连接参数已保存。');}
+async function callMobileApi(action,payload={},keyOverride=null){
+  const key=(keyOverride!==null?keyOverride:state.adminKey||'').trim();
+  if(!key)throw new Error('请先输入后台密钥。');
+  let res;
+  try{
+    res=await fetch(`${baseUrl()}/rest/v1/rpc/xm_admin_mobile_api`,{
+      method:'POST',cache:'no-store',
+      headers:{'apikey':anonKey(),'Authorization':'Bearer '+anonKey(),'Content-Type':'application/json','Prefer':'return=representation'},
+      body:JSON.stringify({p_admin_key:key,p_action:action,p_payload:payload||{}})
+    });
+  }catch(err){throw new Error('无法访问 Supabase。请检查网络、项目状态与公开连接参数。');}
+  const text=await res.text();let result=null;
+  try{result=text?JSON.parse(text):null;}catch{result=text;}
+  if(!res.ok){
+    const message=(result&&result.message)||String(result||`请求失败（${res.status}）`);
+    if(/PGRST202|Could not find the function.*xm_admin_mobile_api|schema cache/i.test(message)){
+      throw new Error('手机后台统一接口尚未安装。请在 Supabase SQL Editor 运行 1.0.4 配套 SQL，看到 Success 后刷新。');
+    }
+    if(/invalid.*(api|key)|api key|apikey|jwt/i.test(message))throw new Error('公开连接密钥未通过校验，请重新复制当前项目的 Publishable key。');
+    if(/后台密钥|admin key|console key|unauthorized|forbidden/i.test(message))throw new Error('后台密钥未通过校验。');
+    throw new Error(message);
+  }
+  if(!result||result.ok!==true)throw new Error((result&&result.message)||'云端操作未完成。');
+  return result.data;
+}
 async function probeSupabase(showResult=true,adminOverride=null){
   const admin=(adminOverride!==null?adminOverride:(($('loginKey').value||state.adminKey||''))).trim();
   if(!admin){const msg='请输入后台密钥后再进行连接诊断。';if(showResult)setLoginStatus(msg,'warn');throw new Error(msg);}
-  let res;
   try{
-    res=await fetch(`${baseUrl()}/rest/v1/rpc/xm_admin_list_invite_codes_mobile`,{
-      method:'POST',cache:'no-store',
-      headers:{'apikey':anonKey(),'Authorization':'Bearer '+anonKey(),'Content-Type':'application/json','Prefer':'return=representation'},
-      body:JSON.stringify({p_admin_key:admin})
-    });
-  }catch(err){const msg='无法访问 Supabase 项目。请检查网络、Project URL，或确认项目已恢复。';if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
-  const text=await res.text();let data=null;
-  try{data=text?JSON.parse(text):null;}catch{data=text;}
-  const detail=(data&&data.message)||String(data||'');
-  if(/Could not find the function|PGRST202|does not exist|schema cache/i.test(detail)){
-    const msg='手机后台接口尚未安装或尚未刷新。请确认 1.0.1 配套 SQL 已成功运行，并等待约 30 秒后重试。';if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);
-  }
-  if(res.status===401||res.status===403){
-    const msg=/invalid.*(api|key)|api key|apikey|jwt/i.test(detail)
-      ?'Supabase 已响应，但公开连接密钥未通过校验。请在“高级连接设置”中重新粘贴当前项目的 Publishable key。'
-      :'Supabase 已连接，但后台密钥未通过校验。请确认输入的是原后台密钥。';
-    if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);
-  }
-  if(res.status>=500){const msg=`Supabase 项目暂不可用（${res.status}）。请稍后重试。`;if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
-  if(!res.ok){const msg='Supabase 已连接，但后台校验未通过：'+(detail||`请求返回 ${res.status}`);if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
-  if(!Array.isArray(data)){const msg='后台接口已响应，但返回结果格式异常。请刷新页面后重试。';if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
-  if(showResult)setLoginStatus('Supabase、公开连接密钥和后台接口均已通过校验。','ok');
-  return data;
+    const data=await callMobileApi('health',{},admin);
+    if(!data||data.apiVersion!=='1.0.4')throw new Error('云端接口版本未更新到 1.0.4。');
+    if(showResult)setLoginStatus('Supabase、公开连接参数和手机后台统一接口均已通过校验。','ok');
+    return data;
+  }catch(err){if(showResult)setLoginStatus(err.message,'bad');throw err;}
 }
 async function testConnection(){setBusy(true,'正在诊断连接…');try{await probeSupabase(true);toast('云端连接正常。');}catch(err){toast(err.message,'bad');}finally{setBusy(false);}}
 async function rpc(name,params={},keyOverride=null){
-  const key=keyOverride!==null?keyOverride:state.adminKey;
-  const payload={p_admin_key:key,...params};
-  let res;
-  try{
-    res=await fetch(`${baseUrl()}/rest/v1/rpc/${name}`,{
-      method:'POST',cache:'no-store',headers:{'apikey':anonKey(),'Authorization':'Bearer '+anonKey(),'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(payload)
-    });
-  }catch(err){throw new Error('无法访问 Supabase。请先使用“连接诊断”检查项目地址、公开密钥与网络。');}
-  const text=await res.text();let data=null;
-  try{data=text?JSON.parse(text):null;}catch{data=text;}
-  if(!res.ok){
-    const message=(data&&data.message)||String(data||`请求失败（${res.status}）`);
-    if(/Could not find the function|PGRST202|does not exist|schema cache/i.test(message))throw new Error('手机后台接口尚未安装或尚未刷新。请在 Supabase SQL Editor 运行 1.0.1 配套 SQL，看到 Success 后等待约 30 秒再刷新。');
-    if(/paused|project.*inactive|503|504/i.test(message))throw new Error('Supabase 项目暂不可用，请先恢复项目后重试。');
-    throw new Error(message);
+  switch(name){
+    case 'xm_admin_list_invite_codes_mobile':
+      return callMobileApi('list_codes',{},keyOverride);
+    case 'xm_admin_random_create_invite_codes':
+      return callMobileApi('create_random',{
+        count:params.p_count,
+        label_prefix:params.p_label_prefix,
+        max_devices:params.p_max_devices,
+        expires_at:params.p_expires_at,
+        group_name:params.p_group_name,
+        note:params.p_note,
+        min_version:params.p_min_version
+      },keyOverride);
+    case 'xm_admin_revoke_invite_code':
+      return callMobileApi('manage_one',{manage_action:'revoke',code_display:params.p_code_display,reason:params.p_reason},keyOverride);
+    case 'xm_admin_reactivate_invite_code':
+      return callMobileApi('manage_one',{manage_action:'reactivate',code_display:params.p_code_display,reason:params.p_reason},keyOverride);
+    case 'xm_admin_reset_invite_devices':
+      return callMobileApi('manage_one',{manage_action:'reset',code_display:params.p_code_display,reason:params.p_reason},keyOverride);
+    case 'xm_admin_set_invite_max_devices':
+      return callMobileApi('manage_one',{manage_action:'set_max',code_display:params.p_code_display,max_devices:params.p_max_devices},keyOverride);
+    case 'xm_admin_list_activations':
+      return callMobileApi('list_devices',{code_display:params.p_code_display},keyOverride);
+    case 'xm_admin_get_version_policy':
+      return callMobileApi('get_version',{},keyOverride);
+    case 'xm_admin_set_version_policy':
+      return callMobileApi('set_version',{
+        min_supported_version:params.p_min_supported_version,
+        latest_version:params.p_latest_version,
+        force_disable_below:params.p_force_disable_below,
+        notice:params.p_notice
+      },keyOverride);
+    case 'xm_admin_recent_audit_logs':
+      return callMobileApi('logs',{limit:params.p_limit},keyOverride);
+    default:
+      throw new Error('网页调用了未支持的后台操作。');
   }
-  return data;
 }
 async function login(){
   const key=$('loginKey').value.trim();
   if(!key){setLoginStatus('请输入后台密钥。','warn');return;}
   setBusy(true,'正在连接云端…');setLoginStatus('正在校验后台密钥…');
   try{
-    const data=await probeSupabase(false,key);
-    if(!Array.isArray(data))throw new Error('后台校验未通过。');
-    state.adminKey=key;state.codes=data;$('loginKey').value='';
+    await probeSupabase(false,key);
+    state.adminKey=key;
+    const data=await callMobileApi('list_codes',{},key);
+    if(!Array.isArray(data))throw new Error('邀请码列表返回格式异常。');
+    state.codes=data;$('loginKey').value='';
     $('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');
     $('projectDisplay').textContent=baseUrl();setSideStatus('后台已解锁，云端连接正常。','ok');
     showSection('codes');renderCodes();await loadVersion(false);
@@ -388,17 +416,56 @@ function applyGroupPreset(group){$('genGroup').value=group;const d=new Date(),m=
 function selectedRows(){const map=new Map(state.codes.map(c=>[String(c.code_display),c]));return Array.from(state.selected).map(c=>map.get(c)).filter(Boolean);}
 async function mapLimit(items,limit,worker){const results=new Array(items.length);let next=0;async function run(){while(true){const i=next++;if(i>=items.length)return;try{results[i]={ok:true,value:await worker(items[i],i)};}catch(error){results[i]={ok:false,error};}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},run));return results;}
 async function batchManage(action){
-  if(state.batchRunning)return;const rows=selectedRows();if(!rows.length){toast('请先勾选邀请码。','bad');return;}
-  let label='',fn='',extra=()=>({}),reason=null;
-  if(action==='revoke'){label='撤销';fn='xm_admin_revoke_invite_code';reason=prompt('填写批量撤销原因（可留空）：','批量管理')||null;extra=code=>({p_code_display:code,p_reason:reason});}
-  else if(action==='reactivate'){label='恢复';fn='xm_admin_reactivate_invite_code';reason=prompt('填写批量恢复原因（可留空）：','批量管理')||null;extra=code=>({p_code_display:code,p_reason:reason});}
-  else if(action==='reset'){label='重置设备';fn='xm_admin_reset_invite_devices';reason=prompt('填写批量重置原因（可留空）：','批量管理')||null;extra=code=>({p_code_display:code,p_reason:reason});}
-  else if(action==='max'){label='修改设备上限';fn='xm_admin_set_invite_max_devices';const raw=prompt('请输入统一设备上限（1–10）：','1');if(raw===null)return;const n=Number(raw);if(!Number.isInteger(n)||n<1||n>10){toast('设备上限必须是 1 到 10 的整数。','bad');return;}extra=code=>({p_code_display:code,p_max_devices:n});}
-  else return;
+  if(state.batchRunning)return;
+  const rows=selectedRows();
+  if(!rows.length){toast('请先勾选邀请码。','bad');return;}
+  let label='',manageAction='',reason=null,maxDevices=null;
+  if(action==='revoke'){
+    label='撤销';manageAction='revoke';
+    const input=prompt('填写批量撤销原因（可留空）：','批量管理');if(input===null)return;
+    reason=input.trim()||null;
+  }else if(action==='reactivate'){
+    label='恢复';manageAction='reactivate';
+    const input=prompt('填写批量恢复原因（可留空）：','批量管理');if(input===null)return;
+    reason=input.trim()||null;
+  }else if(action==='reset'){
+    label='重置设备';manageAction='reset';
+    const input=prompt('填写批量重置原因（可留空）：','批量管理');if(input===null)return;
+    reason=input.trim()||null;
+  }else if(action==='max'){
+    label='修改设备上限';manageAction='set_max';
+    const raw=prompt('请输入统一设备上限（1–10）：','1');if(raw===null)return;
+    const n=Number(raw);if(!Number.isInteger(n)||n<1||n>10){toast('设备上限必须是 1 到 10 的整数。','bad');return;}
+    maxDevices=n;
+  }else return;
   if(!confirm(`确定对已勾选的 ${rows.length} 个邀请码执行“${label}”吗？`))return;
+
   state.batchRunning=true;setBusy(true,`正在批量${label}…`);
-  try{let done=0;const results=await mapLimit(rows,4,async row=>{const r=await rpc(fn,extra(String(row.code_display)));done++;$('busyText').textContent=`正在批量${label}… ${done}/${rows.length}`;return r;});const failed=results.filter(r=>!r.ok);await loadCodes(false);state.selected.clear();renderCodes();if(failed.length){toast(`批量${label}完成：成功 ${rows.length-failed.length}，失败 ${failed.length}。`,'bad');}else toast(`已批量${label} ${rows.length} 个邀请码。`);}
-  finally{state.batchRunning=false;setBusy(false);}
+  try{
+    const results=await callMobileApi('batch_manage',{
+      manage_action:manageAction,
+      codes:rows.map(r=>String(r.code_display||'').trim()),
+      reason,
+      max_devices:maxDevices
+    })||[];
+    const failed=results.filter(r=>!r.ok),successCount=results.length-failed.length;
+    await loadCodes(false);
+    state.selected=new Set(failed.map(item=>String(item.code_display||'')));
+    renderCodes();
+    if(failed.length){
+      const firstMessage=failed[0].message||'部分操作未完成。';
+      setSideStatus(`批量${label}未全部完成：成功 ${successCount}，失败 ${failed.length}。${firstMessage}`,'bad');
+      toast(`批量${label}完成：成功 ${successCount}，失败 ${failed.length}。`,'bad');
+    }else{
+      setSideStatus(`已批量${label} ${successCount} 个邀请码。`,'ok');
+      toast(`已批量${label} ${successCount} 个邀请码。`);
+    }
+  }catch(error){
+    setSideStatus(`批量${label}未完成：${error.message}`,'bad');
+    toast(error.message,'bad');
+  }finally{
+    state.batchRunning=false;setBusy(false);
+  }
 }
 async function copyText(text){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);}else{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}toast('已复制。');}catch{toast('复制失败，请长按内容手动复制。','bad');}}
 function download(name,text,type='text/plain;charset=utf-8'){const blob=new Blob(['\ufeff'+text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);}
@@ -419,7 +486,7 @@ async function generateCodes(){
   const count=Number($('genCount').value),max=Number($('genMaxDevices').value),expiresRaw=$('genExpires').value;
   if(!Number.isInteger(count)||count<1||count>500){toast('生成数量必须是 1 到 500。','bad');return;}if(!Number.isInteger(max)||max<1||max>10){toast('设备上限必须是 1 到 10。','bad');return;}
   const group=$('genGroup').value.trim();let labelPrefix=$('genLabel').value.trim();if(group&&!labelPrefix){const d=new Date(),m=String(d.getMonth()+1).padStart(2,'0');labelPrefix=`${group}-${d.getFullYear()}${m}`;$('genLabel').value=labelPrefix;}
-  const params={p_count:count,p_code_prefix:$('genPrefix').value.trim(),p_label_prefix:labelPrefix||null,p_max_devices:max,p_expires_at:expiresRaw?new Date(expiresRaw).toISOString():null,p_group_name:group||null,p_note:$('genNote').value.trim()||null,p_min_version:$('genMinVersion').value.trim()||'1.0.0'};
+  const params={p_count:count,p_label_prefix:labelPrefix||null,p_max_devices:max,p_expires_at:expiresRaw?new Date(expiresRaw).toISOString():null,p_group_name:group||null,p_note:$('genNote').value.trim()||null,p_min_version:$('genMinVersion').value.trim()||'1.0.0'};
   if(!confirm(`将为“${group||'未分组'}”生成 ${count} 个随机邀请码。公会信息只保存在后台，不会写进邀请码，是否继续？`))return;
   setBusy(true,'正在生成随机邀请码…');$('createdStatus').className='status';$('createdStatus').textContent='正在生成…';
   try{state.created=await rpc('xm_admin_random_create_invite_codes',params)||[];renderCreated();$('createdStatus').className='status ok';$('createdStatus').textContent=`本次已生成 ${state.created.length} 个随机邀请码。`;toast('随机邀请码已生成。');await loadCodes(false);}
