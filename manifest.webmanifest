@@ -1,0 +1,14 @@
+{
+  "name": "小妙版人才资源分配助手｜云端后台",
+  "short_name": "小妙后台",
+  "description": "邀请码、设备与版本策略管理后台",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f5ff",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}

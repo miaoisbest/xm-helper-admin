@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7c3aed">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小妙后台">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://*.supabase.co; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>小妙版人才资源分配助手｜云端管理后台</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#f8f5ff;--card:#fff;--line:#e8dcfa;--line2:#f1eafb;--text:#211533;--muted:#746487;
+  --main:#7c3aed;--main-dark:#5b21b6;--pink:#db2777;--ok:#16803e;--warn:#a16207;--bad:#b42318;
+  --shadow:0 12px 34px rgba(75,35,120,.10);--radius:18px;--safe-bottom:env(safe-area-inset-bottom,0px)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(180deg,#efe4ff 0,#f8f5ff 240px);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",Arial,sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{min-height:44px;border:0;border-radius:12px;padding:10px 14px;background:linear-gradient(125deg,var(--pink),var(--main));color:#fff;font-weight:800;cursor:pointer;touch-action:manipulation}
+button:hover{filter:brightness(.98)}button:active{transform:translateY(1px)}button:disabled{opacity:.48;cursor:not-allowed;transform:none}
+button.secondary{background:#fff;color:var(--main-dark);border:1px solid #d8c4f6}
+button.ghost{background:#f7f1ff;color:var(--main-dark);border:1px solid var(--line)}
+button.danger{background:var(--bad)}button.ok{background:var(--ok)}button.small-btn{min-height:36px;padding:7px 10px;font-size:12px;border-radius:10px}
+input,select,textarea{width:100%;min-height:44px;border:1px solid #d8c4f6;border-radius:12px;background:#fff;color:var(--text);padding:10px 12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#9b72eb;box-shadow:0 0 0 3px rgba(124,58,237,.12)}
+textarea{min-height:82px;resize:vertical}
+label{display:block;margin:10px 0 6px;font-size:13px;font-weight:800;color:#55347c}
+.hidden{display:none!important}.nowrap{white-space:nowrap}.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.02em}
+.app-shell{max-width:1500px;margin:0 auto;padding:18px 20px 32px}
+.hero{background:linear-gradient(125deg,#b333d9,#5b46e8);color:#fff;padding:22px 24px;border-radius:0 0 26px 26px;box-shadow:var(--shadow)}
+.hero-inner{max-width:1500px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:16px}.hero h1{font-size:26px;margin:0}.hero p{margin:7px 0 0;opacity:.92;font-size:14px}.hero-actions{display:flex;gap:8px;align-items:center}.hero .secondary{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.45)}
+.status-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#86efac;margin-right:6px;box-shadow:0 0 0 4px rgba(134,239,172,.18)}
+.desktop-nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.desktop-nav button{background:#fff;color:#5b21b6;border:1px solid var(--line);box-shadow:0 4px 15px rgba(75,35,120,.05)}.desktop-nav button.active{background:#5b21b6;color:#fff;border-color:#5b21b6}
+.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.card+ .card{margin-top:16px}.card h2{font-size:20px;margin:0 0 12px}.card h3{font-size:16px;margin:18px 0 8px}
+.grid-main{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}.side-panel{position:sticky;top:14px;height:max-content}.side-panel .status{margin-top:12px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 5px 18px rgba(75,35,120,.05);font-size:13px;color:var(--muted)}.stat b{display:block;color:#5b21b6;font-size:25px;margin-top:4px}
+.status{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#f7f1ff;color:#5b397e;font-size:13px;line-height:1.55}.status.ok{background:#ecfdf3;border-color:#bbf7d0;color:#166534}.status.warn{background:#fff8e6;border-color:#fde68a;color:#854d0e}.status.bad{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+.notice{padding:11px 13px;border-radius:13px;background:#fbf8ff;border:1px solid var(--line);font-size:13px;color:var(--muted);line-height:1.65}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.row>*{flex:1;min-width:120px}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions>*{flex:0 0 auto}
+.toolbar{display:grid;grid-template-columns:1.4fr .7fr .7fr auto;gap:9px;align-items:end;margin-bottom:12px}.toolbar label{margin-top:0}
+.selection-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}.badge{display:inline-flex;align-items:center;min-height:34px;padding:6px 10px;border-radius:999px;background:#f4ecff;color:#5b21b6;border:1px solid var(--line);font-size:12px;font-weight:800}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px;max-height:570px;background:#fff}table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:980px}th,td{text-align:left;padding:10px 9px;border-bottom:1px solid var(--line2);vertical-align:top}th{position:sticky;top:0;background:#f7f1ff;color:#55347c;z-index:1}tr:last-child td{border-bottom:0}tr.selected{background:#faf5ff}.check{width:18px;height:18px;min-height:0;accent-color:var(--main)}
+.pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:800}.pill.active{background:#dcfce7;color:#166534}.pill.revoked{background:#fee2e2;color:#991b1b}.pill.expired{background:#fef3c7;color:#92400e}
+.mobile-list{display:none}.mobile-card{border:1px solid var(--line);border-radius:15px;padding:13px;background:#fff;margin-bottom:10px}.mobile-card.selected{outline:2px solid rgba(124,58,237,.28);background:#faf7ff}.mobile-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.mobile-code{font-size:16px;font-weight:900;word-break:break-all}.mobile-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:11px 0}.meta-box{background:#faf7ff;border:1px solid var(--line2);border-radius:11px;padding:8px;font-size:12px;color:var(--muted)}.meta-box b{display:block;color:var(--text);font-size:13px;margin-top:2px;word-break:break-word}.mobile-note{font-size:12px;color:var(--muted);line-height:1.55;margin:8px 0}.mobile-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.mobile-actions button{min-height:38px;padding:7px 6px;font-size:12px}
+.created-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:9px;margin-top:12px}.created-item{border:1px solid var(--line);background:#faf7ff;border-radius:13px;padding:11px}.created-item b{display:block;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px;color:#4c1d95;word-break:break-all}.created-item span{font-size:12px;color:var(--muted)}
+.logbox{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;background:#21142e;color:#f4e8ff;border-radius:14px;padding:12px;max-height:430px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.footer{text-align:center;color:#7c6a8f;font-size:12px;line-height:1.7;margin:22px 0 8px;padding-bottom:8px}
+.bottom-nav{display:none}
+.toast{position:fixed;left:50%;bottom:calc(22px + var(--safe-bottom));transform:translateX(-50%) translateY(20px);background:#21142e;color:#fff;padding:10px 14px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.22);font-size:13px;z-index:1000;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.bad{background:#9f1239}
+.busy{position:fixed;inset:0;background:rgba(37,20,54,.23);backdrop-filter:blur(2px);z-index:900;display:flex;align-items:center;justify-content:center}.busy-card{background:#fff;border-radius:18px;padding:18px 22px;box-shadow:var(--shadow);font-weight:800;color:#5b21b6}.spinner{display:inline-block;width:18px;height:18px;border:3px solid #e4d5fa;border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:-4px}@keyframes spin{to{transform:rotate(360deg)}}
+.login-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#efe3ff,#fbf9ff)}.login-card{width:min(520px,100%);background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--shadow)}.login-brand{display:flex;align-items:center;gap:13px;margin-bottom:8px}.brand-icon{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#db2777,#7c3aed);color:#fff;font-size:24px;font-weight:900}.login-card h1{font-size:24px;margin:0}.login-card p{font-size:13px;color:var(--muted);line-height:1.65}.password-row{display:grid;grid-template-columns:1fr auto;gap:8px}.password-row button{min-width:70px}.login-actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}.security-note{margin-top:14px;padding:10px 12px;border-radius:12px;background:#fff8e6;border:1px solid #fde68a;color:#7c5200;font-size:12px;line-height:1.6}
+details.connection{margin-top:12px;border:1px solid var(--line);border-radius:13px;padding:9px 11px;background:#faf7ff}details.connection summary{cursor:pointer;font-weight:800;color:#5b21b6;font-size:13px}.connection-grid{margin-top:8px}.masked{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;word-break:break-all;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;color:var(--muted)}
+@media(max-width:1050px){.grid-main{grid-template-columns:1fr}.side-panel{position:static}.stats{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr 1fr}.toolbar .wide{grid-column:1/-1}}
+@media(max-width:720px){
+  body{padding-bottom:calc(76px + var(--safe-bottom))}.hero{padding:17px 16px;border-radius:0 0 21px 21px}.hero-inner{align-items:flex-start}.hero h1{font-size:20px}.hero p{font-size:12px}.hero-actions .status-text{display:none}.app-shell{padding:13px 12px 20px}.desktop-nav{display:none}.grid-main{display:block}.side-panel{display:none}.card{padding:14px;border-radius:16px}.stats{gap:8px}.stat{padding:11px}.stat b{font-size:21px}.toolbar{grid-template-columns:1fr}.toolbar .wide{grid-column:auto}.table-wrap{display:none}.mobile-list{display:block}.selection-bar{overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px}.selection-bar button,.selection-bar .badge{flex:0 0 auto}.row{display:grid;grid-template-columns:1fr}.row>*{min-width:0}.actions{display:grid;grid-template-columns:1fr 1fr}.actions>*{width:100%}.created-list{grid-template-columns:1fr}.mobile-actions{grid-template-columns:repeat(3,1fr)}
+  .bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(75,35,120,.10);z-index:500;padding:6px 6px calc(6px + var(--safe-bottom))}.bottom-nav button{background:transparent;color:#7b688e;border:0;border-radius:10px;min-height:56px;padding:5px 2px;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.bottom-nav button .nav-icon{font-size:19px;line-height:1}.bottom-nav button.active{color:#6d28d9;background:#f3e8ff}.toast{bottom:calc(88px + var(--safe-bottom));max-width:88vw;text-align:center}.login-card{padding:20px}.login-actions{grid-template-columns:1fr}.password-row{grid-template-columns:1fr auto}
+}
+@media(max-width:390px){.mobile-actions{grid-template-columns:1fr 1fr}.mobile-meta{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.hero-actions button{padding:8px 10px;min-height:38px}}
+</style>
+</head>
+<body>
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-brand"><div class="brand-icon">妙</div><div><h1>小妙云端后台</h1><p style="margin:3px 0 0">邀请码、设备与版本管理｜电脑和手机通用</p></div></div>
+    <div class="security-note">后台密钥只在当前页面内存中使用，刷新或关闭页面后需要重新输入。网页不会保存后台密钥，也不包含 service_role / secret key。</div>
+    <label for="loginKey">后台密钥</label>
+    <div class="password-row">
+      <input id="loginKey" type="password" autocomplete="current-password" placeholder="输入你在 Supabase 中设置的后台密钥">
+      <button id="togglePassword" class="secondary" type="button">显示</button>
+    </div>
+    <div class="login-actions">
+      <button id="loginButton" type="button">解锁并连接</button>
+      <button id="clearLogin" class="secondary" type="button">清空</button>
+    </div>
+    <div id="loginStatus" class="status" style="margin-top:12px">等待输入后台密钥。</div>
+    <details class="connection">
+      <summary>高级连接设置</summary>
+      <div class="connection-grid">
+        <label for="projectUrl">Supabase Project URL</label>
+        <input id="projectUrl" inputmode="url">
+        <label for="anonKey">anon / publishable key</label>
+        <textarea id="anonKey" spellcheck="false"></textarea>
+        <button id="saveConnection" class="secondary" type="button" style="margin-top:8px">保存公开连接参数</button>
+        <p style="font-size:12px;color:var(--muted);line-height:1.55">这里只能填写 anon / publishable key。请勿填写 service_role、secret key 或数据库密码。</p>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="hero">
+    <div class="hero-inner">
+      <div><h1>小妙版人才资源分配助手</h1><p>云端管理后台 1.0.0｜随机邀请码与手机端</p></div>
+      <div class="hero-actions"><span class="status-text"><span class="status-dot"></span>已连接</span><button id="lockButton" class="secondary" type="button">锁定</button></div>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <nav class="desktop-nav" aria-label="后台导航">
+      <button data-section="codes" class="active">邀请码</button>
+      <button data-section="generate">随机生成</button>
+      <button data-section="devices">设备记录</button>
+      <button data-section="version">版本策略</button>
+      <button data-section="logs">审计日志</button>
+    </nav>
+
+    <div class="grid-main">
+      <aside class="card side-panel">
+        <h2>后台状态</h2>
+        <div id="sideStatus" class="status ok">后台已解锁。</div>
+        <h3>快速说明</h3>
+        <div class="notice">随机邀请码默认采用 <span class="code">XM-XXXXX-XXXXX</span>。公会名称、分发对象等信息只保存在后台标签和分组中，不写入邀请码本身。</div>
+        <h3>连接项目</h3>
+        <div id="projectDisplay" class="masked"></div>
+        <div class="actions" style="margin-top:10px"><button id="refreshAllSide" class="secondary" type="button">刷新全部</button></div>
+        <h3>安全边界</h3>
+        <p style="font-size:12px;color:var(--muted);line-height:1.65;margin:0">普通玩家只拿邀请码。后台密钥不外发；网页源代码中不保存后台密钥，也不包含 service_role。</p>
+      </aside>
+
+      <main>
+        <section id="section-codes" class="app-section">
+          <div class="stats">
+            <div class="stat">邀请码总数<b id="statTotal">-</b></div>
+            <div class="stat">可用邀请码<b id="statUsable">-</b></div>
+            <div class="stat">已激活设备<b id="statActive">-</b></div>
+            <div class="stat">已撤销/过期<b id="statInactive">-</b></div>
+          </div>
+          <div class="card">
+            <h2>邀请码总览</h2>
+            <div class="toolbar">
+              <div class="wide"><label for="codeSearch">搜索</label><input id="codeSearch" placeholder="邀请码、标签、分组、备注"></div>
+              <div><label for="statusFilter">状态</label><select id="statusFilter"><option value="all">全部</option><option value="unused">未激活</option><option value="used">已激活</option><option value="active">可用</option><option value="revoked">已撤销</option><option value="expired">已过期</option></select></div>
+              <div><label for="deviceFilter">设备</label><select id="deviceFilter"><option value="all">全部</option><option value="0">0 台</option><option value="1">1 台及以上</option><option value="full">已达上限</option></select></div>
+              <button id="refreshCodes" class="secondary" type="button">刷新</button>
+            </div>
+            <div class="selection-bar">
+              <button id="selectVisible" class="ghost" type="button">勾选当前</button>
+              <button id="clearSelection" class="ghost" type="button">清空勾选</button>
+              <button id="copySelected" class="secondary" type="button">复制已勾选</button>
+              <button id="exportSelected" class="secondary" type="button">导出 CSV</button>
+              <span id="visibleBadge" class="badge">当前 0 条</span>
+              <span id="selectedBadge" class="badge">已勾选 0 条</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th><input id="checkAllDesktop" class="check" type="checkbox" aria-label="勾选当前结果"></th><th>邀请码</th><th>后台标签</th><th>状态</th><th>设备</th><th>有效期</th><th>最后使用</th><th>分组/备注</th><th>操作</th></tr></thead>
+                <tbody id="codesBody"><tr><td colspan="9">等待加载。</td></tr></tbody>
+              </table>
+            </div>
+            <div id="codesMobile" class="mobile-list"></div>
+          </div>
+        </section>
+
+        <section id="section-generate" class="app-section hidden">
+          <div class="card">
+            <h2>随机生成邀请码</h2>
+            <div class="notice">邀请码由 Supabase 服务端随机生成。默认格式为 <span class="code">XM-XXXXX-XXXXX</span>，不再使用“公会缩写＋月份＋流水号”。内部标签和分组仍可写公会名称，方便你自己管理。</div>
+            <div class="row">
+              <div><label for="genCount">生成数量</label><input id="genCount" type="number" min="1" max="500" value="10"></div>
+              <div><label for="genPrefix">中性前缀</label><input id="genPrefix" maxlength="6" value="XM" placeholder="例如 XM"></div>
+              <div><label for="genMaxDevices">设备上限</label><input id="genMaxDevices" type="number" min="1" max="10" value="1"></div>
+            </div>
+            <div class="row">
+              <div><label for="genLabel">后台标签前缀</label><input id="genLabel" value="正式用户" placeholder="例如 雲飛揚7月"></div>
+              <div><label for="genGroup">后台分组</label><input id="genGroup" placeholder="例如 雲飛揚（不会写进邀请码）"></div>
+              <div><label for="genMinVersion">最低版本</label><input id="genMinVersion" value="1.0.0"></div>
+            </div>
+            <div class="row">
+              <div><label for="genExpires">有效期</label><input id="genExpires" type="datetime-local"></div>
+              <div><label for="genNote">备注</label><input id="genNote" placeholder="例如 首批正式分发"></div>
+            </div>
+            <div class="actions" style="margin-top:13px">
+              <button id="generateButton" type="button">生成随机邀请码</button>
+              <button id="copyCreated" class="secondary" type="button">复制本批</button>
+              <button id="exportCreated" class="secondary" type="button">导出本批 CSV</button>
+            </div>
+            <h3>本次生成结果</h3>
+            <div id="createdStatus" class="status">还没有生成。</div>
+            <div id="createdList" class="created-list"></div>
+          </div>
+        </section>
+
+        <section id="section-devices" class="app-section hidden">
+          <div class="card">
+            <h2>设备记录</h2>
+            <div class="row">
+              <div><label for="deviceCode">指定邀请码（可留空）</label><input id="deviceCode" placeholder="留空查看全部设备"></div>
+              <div class="actions"><button id="loadDevices" type="button">查询设备</button><button id="copyDevices" class="secondary" type="button">复制 CSV</button></div>
+            </div>
+            <div class="table-wrap" style="margin-top:12px">
+              <table><thead><tr><th>邀请码</th><th>后台标签</th><th>设备名</th><th>尾号</th><th>版本</th><th>首次使用</th><th>最后使用</th><th>状态</th><th>备注</th></tr></thead><tbody id="devicesBody"><tr><td colspan="9">等待查询。</td></tr></tbody></table>
+            </div>
+            <div id="devicesMobile" class="mobile-list" style="margin-top:12px"></div>
+          </div>
+        </section>
+
+        <section id="section-version" class="app-section hidden">
+          <div class="card">
+            <h2>版本策略</h2>
+            <div class="status warn">新版尚未进入 Edge 商店前，不要提前提高“最低支持版本”，否则当前商店版可能被云端锁住。</div>
+            <div class="row">
+              <div><label for="minVersion">最低支持版本</label><input id="minVersion" value="1.0.0"></div>
+              <div><label for="latestVersion">当前最新版本</label><input id="latestVersion" value="1.0.0"></div>
+              <div><label for="forceDisable">低于最低版本</label><select id="forceDisable"><option value="true">停止自动运行</option><option value="false">只提示，不停用</option></select></div>
+            </div>
+            <label for="versionNotice">用户提示</label><textarea id="versionNotice">当前版本可用。</textarea>
+            <div class="actions"><button id="saveVersion" type="button">保存版本策略</button><button id="loadVersion" class="secondary" type="button">重新读取</button></div>
+            <div id="versionStatus" class="status" style="margin-top:12px">等待读取。</div>
+          </div>
+        </section>
+
+        <section id="section-logs" class="app-section hidden">
+          <div class="card">
+            <h2>审计日志</h2>
+            <div class="row">
+              <div><label for="logLimit">显示条数</label><input id="logLimit" type="number" min="1" max="500" value="50"></div>
+              <div class="actions"><button id="loadLogs" type="button">刷新日志</button><button id="copyLogs" class="secondary" type="button">复制 CSV</button></div>
+            </div>
+            <div id="logBox" class="logbox" style="margin-top:12px">等待加载。</div>
+          </div>
+        </section>
+
+        <div class="footer">善良可爱又努力的小妙得意 制作<br>仅供个人兴趣交流｜非官方工具｜请自行确认</div>
+      </main>
+    </div>
+  </div>
+
+  <nav class="bottom-nav" aria-label="手机端导航">
+    <button data-section="codes" class="active"><span class="nav-icon">⌁</span><span>邀请码</span></button>
+    <button data-section="generate"><span class="nav-icon">＋</span><span>生成</span></button>
+    <button data-section="devices"><span class="nav-icon">▣</span><span>设备</span></button>
+    <button data-section="version"><span class="nav-icon">↻</span><span>版本</span></button>
+    <button data-section="logs"><span class="nav-icon">≡</span><span>日志</span></button>
+  </nav>
+</div>
+
+<div id="busy" class="busy hidden"><div class="busy-card"><span class="spinner"></span><span id="busyText">处理中…</span></div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+'use strict';
+const DEFAULT_URL='https://caxbsrudzfjqxpwjatlj.supabase.co';
+const DEFAULT_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNheGJzcnVkemZqcXhwd2phdGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMDY3MDAsImV4cCI6MjA5ODc4MjcwMH0.kRwsbDvKmkwjrgceWkOX98xoa2KejhQM1peUzK8eD0s';
+const state={adminKey:'',codes:[],created:[],devices:[],logs:[],selected:new Set(),busy:0,currentSection:'codes'};
+const $=id=>document.getElementById(id);
+const qsa=sel=>Array.from(document.querySelectorAll(sel));
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function enc(v){return encodeURIComponent(String(v??''));}
+function dec(v){try{return decodeURIComponent(v||'');}catch{return v||'';}}
+function fmt(v){if(!v)return '—';try{return new Date(v).toLocaleString('zh-CN',{hour12:false});}catch{return String(v);}}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"';}
+function effective(c){return c.effective_status||c.status||'active';}
+function statusText(s){return s==='revoked'?'已撤销':s==='expired'?'已过期':'可用';}
+function statusPill(s){return `<span class="pill ${esc(s)}">${statusText(s)}</span>`;}
+function baseUrl(){return ($('projectUrl').value||DEFAULT_URL).trim().replace(/\/$/,'');}
+function anonKey(){return ($('anonKey').value||DEFAULT_ANON).trim();}
+function setLoginStatus(msg,type=''){$('loginStatus').className='status '+type;$('loginStatus').textContent=msg;}
+function setSideStatus(msg,type='ok'){$('sideStatus').className='status '+type;$('sideStatus').textContent=msg;}
+function toast(msg,type=''){const el=$('toast');el.textContent=msg;el.className='toast show '+type;clearTimeout(toast._t);toast._t=setTimeout(()=>el.className='toast',2400);}
+function setBusy(on,text='处理中…'){state.busy+=on?1:-1;state.busy=Math.max(0,state.busy);$('busyText').textContent=text;$('busy').classList.toggle('hidden',state.busy===0);}
+function loadConnection(){
+  $('projectUrl').value=localStorage.getItem('xm_mobile_admin_url')||DEFAULT_URL;
+  $('anonKey').value=localStorage.getItem('xm_mobile_admin_anon')||DEFAULT_ANON;
+}
+function saveConnection(){localStorage.setItem('xm_mobile_admin_url',baseUrl());localStorage.setItem('xm_mobile_admin_anon',anonKey());toast('公开连接参数已保存。');}
+async function rpc(name,params={},keyOverride=null){
+  const key=keyOverride!==null?keyOverride:state.adminKey;
+  const payload={p_admin_key:key,...params};
+  let res;
+  try{
+    res=await fetch(`${baseUrl()}/rest/v1/rpc/${name}`,{
+      method:'POST',cache:'no-store',headers:{'apikey':anonKey(),'Authorization':'Bearer '+anonKey(),'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(payload)
+    });
+  }catch(err){throw new Error('无法连接云端。请确认网络正常，并检查 Supabase 项目是否已经恢复。');}
+  const text=await res.text();let data=null;
+  try{data=text?JSON.parse(text):null;}catch{data=text;}
+  if(!res.ok){
+    const message=(data&&data.message)||String(data||`请求失败（${res.status}）`);
+    if(/Could not find the function|PGRST202|does not exist/i.test(message))throw new Error('随机码与手机端增量接口尚未安装，请先在 Supabase SQL Editor 运行配套 SQL。');
+    if(/paused|project.*inactive|503|504/i.test(message))throw new Error('Supabase 项目暂不可用，请先恢复项目后重试。');
+    throw new Error(message);
+  }
+  return data;
+}
+async function login(){
+  const key=$('loginKey').value.trim();
+  if(!key){setLoginStatus('请输入后台密钥。','warn');return;}
+  setBusy(true,'正在连接云端…');setLoginStatus('正在校验后台密钥…');
+  try{
+    const data=await rpc('xm_admin_list_invite_codes_mobile',{},key);
+    if(!Array.isArray(data))throw new Error('后台校验未通过。');
+    state.adminKey=key;state.codes=data;$('loginKey').value='';
+    $('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');
+    $('projectDisplay').textContent=baseUrl();setSideStatus('后台已解锁，云端连接正常。','ok');
+    showSection('codes');renderCodes();await loadVersion(false);
+  }catch(err){setLoginStatus(err.message,'bad');}
+  finally{setBusy(false);}
+}
+function lockApp(){state.adminKey='';state.codes=[];state.created=[];state.devices=[];state.logs=[];state.selected.clear();$('app').classList.add('hidden');$('loginScreen').classList.remove('hidden');setLoginStatus('后台已锁定。');window.scrollTo({top:0,behavior:'instant'});}
+function showSection(name){
+  state.currentSection=name;qsa('.app-section').forEach(el=>el.classList.toggle('hidden',el.id!==`section-${name}`));
+  qsa('[data-section]').forEach(el=>el.classList.toggle('active',el.dataset.section===name));window.scrollTo({top:0,behavior:'smooth'});
+  if(name==='devices'&&!state.devices.length)loadDevices();if(name==='version')loadVersion();if(name==='logs'&&!state.logs.length)loadLogs();
+}
+async function loadAll(){await Promise.all([loadCodes(false),loadVersion(false)]);}
+async function loadCodes(showBusy=true){
+  if(showBusy)setBusy(true,'正在读取邀请码…');
+  try{state.codes=await rpc('xm_admin_list_invite_codes_mobile')||[];pruneSelection();renderCodes();setSideStatus(`已读取 ${state.codes.length} 个邀请码。`,'ok');}
+  catch(err){setSideStatus(err.message,'bad');toast(err.message,'bad');}
+  finally{if(showBusy)setBusy(false);}
+}
+function filteredCodes(){
+  const keyword=$('codeSearch').value.trim().toLowerCase(),status=$('statusFilter').value,device=$('deviceFilter').value;
+  return state.codes.filter(c=>{
+    const hay=[c.code_display,c.label,c.group_name,c.note,c.status,c.effective_status].join(' ').toLowerCase();
+    if(keyword&&!hay.includes(keyword))return false;
+    const active=Number(c.active_devices||0),max=Number(c.max_devices||1),s=effective(c);
+    if(status==='unused'&&active!==0)return false;if(status==='used'&&active<1)return false;if(['active','revoked','expired'].includes(status)&&s!==status)return false;
+    if(device==='0'&&active!==0)return false;if(device==='1'&&active<1)return false;if(device==='full'&&active<max)return false;
+    return true;
+  });
+}
+function pruneSelection(){const valid=new Set(state.codes.map(c=>String(c.code_display)));for(const code of state.selected)if(!valid.has(code))state.selected.delete(code);}
+function renderCodes(){
+  const rows=filteredCodes();$('visibleBadge').textContent=`当前 ${rows.length} 条`;$('selectedBadge').textContent=`已勾选 ${state.selected.size} 条`;
+  const allSelected=rows.length>0&&rows.every(c=>state.selected.has(String(c.code_display)));$('checkAllDesktop').checked=allSelected;$('checkAllDesktop').indeterminate=!allSelected&&rows.some(c=>state.selected.has(String(c.code_display)));
+  const total=state.codes.length,usable=state.codes.filter(c=>effective(c)==='active').length,active=state.codes.reduce((n,c)=>n+Number(c.active_devices||0),0),inactive=total-usable;
+  $('statTotal').textContent=total;$('statUsable').textContent=usable;$('statActive').textContent=active;$('statInactive').textContent=inactive;
+  if(!rows.length){$('codesBody').innerHTML='<tr><td colspan="9">没有符合条件的邀请码。</td></tr>';$('codesMobile').innerHTML='<div class="status">没有符合条件的邀请码。</div>';return;}
+  $('codesBody').innerHTML=rows.map(c=>{
+    const code=String(c.code_display||''),e=enc(code),sel=state.selected.has(code)?'selected':'',checked=state.selected.has(code)?'checked':'';
+    return `<tr class="${sel}"><td><input class="check code-check" type="checkbox" data-code="${e}" ${checked}></td><td><b class="code">${esc(code)}</b></td><td>${esc(c.label||'—')}</td><td>${statusPill(effective(c))}</td><td>${Number(c.active_devices||0)}/${Number(c.max_devices||1)}</td><td>${fmt(c.expires_at)}</td><td>${fmt(c.last_seen_at)}</td><td>${esc(c.group_name||'—')}<br><span style="color:var(--muted)">${esc(c.note||'')}</span></td><td class="nowrap"><button class="small-btn secondary" data-action="copy" data-code="${e}">复制</button> <button class="small-btn secondary" data-action="devices" data-code="${e}">设备</button> ${effective(c)==='revoked'?`<button class="small-btn ok" data-action="reactivate" data-code="${e}">恢复</button>`:`<button class="small-btn danger" data-action="revoke" data-code="${e}">撤销</button>`} <button class="small-btn ghost" data-action="max" data-code="${e}" data-max="${Number(c.max_devices||1)}">上限</button> <button class="small-btn ghost" data-action="reset" data-code="${e}">重置</button></td></tr>`;
+  }).join('');
+  $('codesMobile').innerHTML=rows.map(c=>{
+    const code=String(c.code_display||''),e=enc(code),selected=state.selected.has(code),checked=selected?'checked':'';
+    return `<article class="mobile-card ${selected?'selected':''}"><div class="mobile-card-head"><div><label style="display:flex;align-items:center;gap:8px;margin:0"><input class="check code-check" type="checkbox" data-code="${e}" ${checked}><span class="mobile-code code">${esc(code)}</span></label><div style="margin:6px 0 0">${statusPill(effective(c))}</div></div><button class="small-btn secondary" data-action="copy" data-code="${e}">复制</button></div><div class="mobile-meta"><div class="meta-box">后台标签<b>${esc(c.label||'—')}</b></div><div class="meta-box">设备<b>${Number(c.active_devices||0)}/${Number(c.max_devices||1)}</b></div><div class="meta-box">有效期<b>${fmt(c.expires_at)}</b></div><div class="meta-box">最后使用<b>${fmt(c.last_seen_at)}</b></div></div><div class="mobile-note">分组：${esc(c.group_name||'—')}<br>备注：${esc(c.note||'—')}</div><div class="mobile-actions"><button class="secondary" data-action="devices" data-code="${e}">设备</button>${effective(c)==='revoked'?`<button class="ok" data-action="reactivate" data-code="${e}">恢复</button>`:`<button class="danger" data-action="revoke" data-code="${e}">撤销</button>`}<button class="ghost" data-action="max" data-code="${e}" data-max="${Number(c.max_devices||1)}">设备上限</button><button class="ghost" data-action="reset" data-code="${e}">重置绑定</button></div></article>`;
+  }).join('');
+}
+function selectedRows(){const map=new Map(state.codes.map(c=>[String(c.code_display),c]));return Array.from(state.selected).map(c=>map.get(c)).filter(Boolean);}
+async function copyText(text){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);}else{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}toast('已复制。');}catch{toast('复制失败，请长按内容手动复制。','bad');}}
+function download(name,text,type='text/plain;charset=utf-8'){const blob=new Blob(['\ufeff'+text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);}
+function codesCsv(rows){return ['邀请码,后台标签,状态,设备,有效期,最后使用,分组,备注',...rows.map(c=>[c.code_display,c.label,statusText(effective(c)),`${c.active_devices||0}/${c.max_devices||1}`,fmt(c.expires_at),fmt(c.last_seen_at),c.group_name,c.note].map(csvCell).join(','))].join('\n');}
+async function handleCodeAction(action,code,max){
+  if(action==='copy'){await copyText(code);return;}
+  if(action==='devices'){$('deviceCode').value=code;showSection('devices');return;}
+  if(action==='revoke'){
+    if(!confirm(`确定撤销邀请码 ${code} 吗？该邀请码现有授权会话会结束。`))return;const reason=prompt('可填写撤销原因（可留空）：','')||null;
+    await mutateCode('xm_admin_revoke_invite_code',{p_code_display:code,p_reason:reason},'邀请码已撤销。');return;
+  }
+  if(action==='reactivate'){if(!confirm(`确定恢复邀请码 ${code} 吗？已撤销设备仍需单独重置。`))return;await mutateCode('xm_admin_reactivate_invite_code',{p_code_display:code,p_reason:null},'邀请码已恢复。');return;}
+  if(action==='reset'){if(!confirm(`确定重置 ${code} 的全部设备绑定吗？之后可以重新绑定设备。`))return;const reason=prompt('可填写重置原因（可留空）：','')||null;await mutateCode('xm_admin_reset_invite_devices',{p_code_display:code,p_reason:reason},'设备绑定已重置。');return;}
+  if(action==='max'){const value=prompt(`请输入 ${code} 的设备上限（1–10）：`,String(max||1));if(value===null)return;const n=Number(value);if(!Number.isInteger(n)||n<1||n>10){toast('设备上限必须是 1 到 10 的整数。','bad');return;}await mutateCode('xm_admin_set_invite_max_devices',{p_code_display:code,p_max_devices:n},'设备上限已更新。');}
+}
+async function mutateCode(fn,params,success){setBusy(true,'正在更新邀请码…');try{await rpc(fn,params);toast(success);await loadCodes(false);}catch(err){toast(err.message,'bad');}finally{setBusy(false);}}
+async function generateCodes(){
+  const count=Number($('genCount').value),max=Number($('genMaxDevices').value),expiresRaw=$('genExpires').value;
+  if(!Number.isInteger(count)||count<1||count>500){toast('生成数量必须是 1 到 500。','bad');return;}if(!Number.isInteger(max)||max<1||max>10){toast('设备上限必须是 1 到 10。','bad');return;}
+  const params={p_count:count,p_code_prefix:$('genPrefix').value.trim(),p_label_prefix:$('genLabel').value.trim()||null,p_max_devices:max,p_expires_at:expiresRaw?new Date(expiresRaw).toISOString():null,p_group_name:$('genGroup').value.trim()||null,p_note:$('genNote').value.trim()||null,p_min_version:$('genMinVersion').value.trim()||'1.0.0'};
+  if(!confirm(`将生成 ${count} 个随机邀请码。公会或对象信息只保存在后台标签中，是否继续？`))return;
+  setBusy(true,'正在生成随机邀请码…');$('createdStatus').className='status';$('createdStatus').textContent='正在生成…';
+  try{state.created=await rpc('xm_admin_random_create_invite_codes',params)||[];renderCreated();$('createdStatus').className='status ok';$('createdStatus').textContent=`本次已生成 ${state.created.length} 个随机邀请码。`;toast('随机邀请码已生成。');await loadCodes(false);}
+  catch(err){$('createdStatus').className='status bad';$('createdStatus').textContent=err.message;toast(err.message,'bad');}
+  finally{setBusy(false);}
+}
+function renderCreated(){
+  $('createdList').innerHTML=state.created.length?state.created.map(c=>`<div class="created-item"><b>${esc(c.code_display)}</b><span>${esc(c.label||'无后台标签')}</span><button class="small-btn secondary" data-created-copy="${enc(c.code_display)}" style="margin-top:8px">复制</button></div>`).join(''):'';
+}
+function createdCsv(){return ['邀请码,后台标签',...state.created.map(c=>[c.code_display,c.label].map(csvCell).join(','))].join('\n');}
+async function loadDevices(){
+  setBusy(true,'正在读取设备记录…');
+  try{state.devices=await rpc('xm_admin_list_activations',{p_code_display:$('deviceCode').value.trim()||null})||[];renderDevices();toast(`已读取 ${state.devices.length} 条设备记录。`);}
+  catch(err){toast(err.message,'bad');}
+  finally{setBusy(false);}
+}
+function renderDevices(){
+  if(!state.devices.length){$('devicesBody').innerHTML='<tr><td colspan="9">没有设备记录。</td></tr>';$('devicesMobile').innerHTML='<div class="status">没有设备记录。</div>';return;}
+  $('devicesBody').innerHTML=state.devices.map(d=>`<tr><td class="code">${esc(d.code_display)}</td><td>${esc(d.label||'—')}</td><td>${esc(d.device_alias||'—')}</td><td class="code">${esc(d.device_id_tail||'—')}</td><td>${esc(d.ext_version||'—')}</td><td>${fmt(d.first_seen_at)}</td><td>${fmt(d.last_seen_at)}</td><td>${d.revoked?'<span class="pill revoked">已撤销</span>':'<span class="pill active">正常</span>'}</td><td>${esc(d.activation_note||'—')}</td></tr>`).join('');
+  $('devicesMobile').innerHTML=state.devices.map(d=>`<article class="mobile-card"><div class="mobile-card-head"><div class="mobile-code code">${esc(d.code_display)}</div>${d.revoked?'<span class="pill revoked">已撤销</span>':'<span class="pill active">正常</span>'}</div><div class="mobile-meta"><div class="meta-box">设备名<b>${esc(d.device_alias||'—')}</b></div><div class="meta-box">设备尾号<b class="code">${esc(d.device_id_tail||'—')}</b></div><div class="meta-box">插件版本<b>${esc(d.ext_version||'—')}</b></div><div class="meta-box">最后使用<b>${fmt(d.last_seen_at)}</b></div></div><div class="mobile-note">首次使用：${fmt(d.first_seen_at)}<br>备注：${esc(d.activation_note||'—')}</div></article>`).join('');
+}
+function devicesCsv(){return ['邀请码,后台标签,设备名,设备尾号,版本,首次使用,最后使用,状态,备注',...state.devices.map(d=>[d.code_display,d.label,d.device_alias,d.device_id_tail,d.ext_version,fmt(d.first_seen_at),fmt(d.last_seen_at),d.revoked?'已撤销':'正常',d.activation_note].map(csvCell).join(','))].join('\n');}
+async function loadVersion(showBusy=true){
+  if(showBusy)setBusy(true,'正在读取版本策略…');
+  try{const data=await rpc('xm_admin_get_version_policy');const v=Array.isArray(data)?data[0]:null;if(v){$('minVersion').value=v.min_supported_version||'1.0.0';$('latestVersion').value=v.latest_version||'1.0.0';$('forceDisable').value=String(v.force_disable_below!==false);$('versionNotice').value=v.notice||'';$('versionStatus').className='status ok';$('versionStatus').textContent=`已读取云端策略，更新时间：${fmt(v.updated_at)}`;}}
+  catch(err){$('versionStatus').className='status bad';$('versionStatus').textContent=err.message;if(showBusy)toast(err.message,'bad');}
+  finally{if(showBusy)setBusy(false);}
+}
+async function saveVersion(){
+  const min=$('minVersion').value.trim(),latest=$('latestVersion').value.trim();if(!min||!latest){toast('版本号不能为空。','bad');return;}
+  if(!confirm(`确认保存版本策略？\n最低支持版本：${min}\n当前最新版本：${latest}`))return;
+  setBusy(true,'正在保存版本策略…');
+  try{await rpc('xm_admin_set_version_policy',{p_min_supported_version:min,p_latest_version:latest,p_force_disable_below:$('forceDisable').value==='true',p_notice:$('versionNotice').value.trim()||null});$('versionStatus').className='status ok';$('versionStatus').textContent='版本策略已保存。';toast('版本策略已保存。');}
+  catch(err){$('versionStatus').className='status bad';$('versionStatus').textContent=err.message;toast(err.message,'bad');}
+  finally{setBusy(false);}
+}
+async function loadLogs(){
+  const limit=Math.max(1,Math.min(500,Number($('logLimit').value)||50));setBusy(true,'正在读取审计日志…');
+  try{state.logs=await rpc('xm_admin_recent_audit_logs',{p_limit:limit})||[];renderLogs();toast(`已读取 ${state.logs.length} 条日志。`);}
+  catch(err){$('logBox').textContent=err.message;toast(err.message,'bad');}
+  finally{setBusy(false);}
+}
+function renderLogs(){
+  $('logBox').textContent=state.logs.length?state.logs.map(l=>`[${fmt(l.created_at)}] ${l.action||'—'}\n邀请码：${l.code_display||'—'}｜设备尾号：${l.device_id_tail||'—'}｜版本：${l.ext_version||'—'}\n${JSON.stringify(l.detail||{},null,2)}`).join('\n\n'):'没有审计日志。';
+}
+function logsCsv(){return ['时间,动作,邀请码,设备尾号,版本,详情',...state.logs.map(l=>[fmt(l.created_at),l.action,l.code_display,l.device_id_tail,l.ext_version,JSON.stringify(l.detail||{})].map(csvCell).join(','))].join('\n');}
+function bindEvents(){
+  $('togglePassword').addEventListener('click',()=>{const input=$('loginKey'),show=input.type==='password';input.type=show?'text':'password';$('togglePassword').textContent=show?'隐藏':'显示';});
+  $('loginButton').addEventListener('click',login);$('loginKey').addEventListener('keydown',e=>{if(e.key==='Enter')login();});$('clearLogin').addEventListener('click',()=>{$('loginKey').value='';setLoginStatus('等待输入后台密钥。');});$('saveConnection').addEventListener('click',saveConnection);$('lockButton').addEventListener('click',lockApp);
+  qsa('[data-section]').forEach(btn=>btn.addEventListener('click',()=>showSection(btn.dataset.section)));
+  $('refreshAllSide').addEventListener('click',()=>{setBusy(true,'正在刷新全部数据…');Promise.all([loadCodes(false),loadVersion(false)]).finally(()=>setBusy(false));});$('refreshCodes').addEventListener('click',()=>loadCodes());
+  ['codeSearch','statusFilter','deviceFilter'].forEach(id=>$(id).addEventListener(id==='codeSearch'?'input':'change',renderCodes));
+  $('selectVisible').addEventListener('click',()=>{filteredCodes().forEach(c=>state.selected.add(String(c.code_display)));renderCodes();});$('clearSelection').addEventListener('click',()=>{state.selected.clear();renderCodes();});
+  $('checkAllDesktop').addEventListener('change',e=>{filteredCodes().forEach(c=>e.target.checked?state.selected.add(String(c.code_display)):state.selected.delete(String(c.code_display)));renderCodes();});
+  $('copySelected').addEventListener('click',()=>{const rows=selectedRows();if(!rows.length){toast('请先勾选邀请码。','bad');return;}copyText(rows.map(c=>c.code_display).join('\n'));});
+  $('exportSelected').addEventListener('click',()=>{const rows=selectedRows();if(!rows.length){toast('请先勾选邀请码。','bad');return;}download('已勾选邀请码.csv',codesCsv(rows),'text/csv;charset=utf-8');});
+  const codeDelegate=e=>{const check=e.target.closest('.code-check');if(check){const code=dec(check.dataset.code);check.checked?state.selected.add(code):state.selected.delete(code);renderCodes();return;}const btn=e.target.closest('[data-action]');if(btn)handleCodeAction(btn.dataset.action,dec(btn.dataset.code),Number(btn.dataset.max||1));};
+  $('codesBody').addEventListener('click',codeDelegate);$('codesBody').addEventListener('change',codeDelegate);$('codesMobile').addEventListener('click',codeDelegate);$('codesMobile').addEventListener('change',codeDelegate);
+  $('generateButton').addEventListener('click',generateCodes);$('copyCreated').addEventListener('click',()=>{if(!state.created.length){toast('本次还没有生成邀请码。','bad');return;}copyText(state.created.map(c=>c.code_display).join('\n'));});$('exportCreated').addEventListener('click',()=>{if(!state.created.length){toast('本次还没有生成邀请码。','bad');return;}download('本批随机邀请码.csv',createdCsv(),'text/csv;charset=utf-8');});$('createdList').addEventListener('click',e=>{const b=e.target.closest('[data-created-copy]');if(b)copyText(dec(b.dataset.createdCopy));});
+  $('loadDevices').addEventListener('click',loadDevices);$('copyDevices').addEventListener('click',()=>{if(!state.devices.length){toast('没有可复制的设备记录。','bad');return;}copyText(devicesCsv());});
+  $('saveVersion').addEventListener('click',saveVersion);$('loadVersion').addEventListener('click',()=>loadVersion());$('loadLogs').addEventListener('click',loadLogs);$('copyLogs').addEventListener('click',()=>{if(!state.logs.length){toast('没有可复制的日志。','bad');return;}copyText(logsCsv());});
+}
+loadConnection();bindEvents();
+</script>
+</body>
+</html>
