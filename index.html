@@ -68,7 +68,7 @@ details.connection{margin-top:12px;border:1px solid var(--line);border-radius:13
 <body>
 <div id="loginScreen" class="login-screen">
   <div class="login-card">
-    <div class="login-brand"><div class="brand-icon">妙</div><div><h1>小妙云端后台</h1><p style="margin:3px 0 0">邀请码、设备与版本管理｜电脑和手机通用｜1.0.1</p></div></div>
+    <div class="login-brand"><div class="brand-icon">妙</div><div><h1>小妙云端后台</h1><p style="margin:3px 0 0">邀请码、设备与版本管理｜电脑和手机通用｜1.0.2</p></div></div>
     <div class="security-note">后台密钥只在当前页面内存中使用，刷新或关闭页面后需要重新输入。网页不会保存后台密钥，也不包含 service_role / secret key。</div>
     <label for="loginKey">后台密钥</label>
     <div class="password-row">
@@ -97,7 +97,7 @@ details.connection{margin-top:12px;border:1px solid var(--line);border-radius:13
 <div id="app" class="hidden">
   <header class="hero">
     <div class="hero-inner">
-      <div><h1>小妙版人才资源分配助手</h1><p>云端管理后台 1.0.1｜批量管理与手机端</p></div>
+      <div><h1>小妙版人才资源分配助手</h1><p>云端管理后台 1.0.2｜连接修正与批量管理</p></div>
       <div class="hero-actions"><span class="status-text"><span class="status-dot"></span>已连接</span><button id="lockButton" class="secondary" type="button">锁定</button></div>
     </div>
   </header>
@@ -275,17 +275,36 @@ function loadConnection(){
   $('anonKey').value=localStorage.getItem('xm_mobile_admin_anon')||DEFAULT_ANON;
 }
 function saveConnection(){localStorage.setItem('xm_mobile_admin_url',baseUrl());localStorage.setItem('xm_mobile_admin_anon',anonKey());toast('公开连接参数已保存。');}
-async function probeSupabase(showResult=true){
+async function probeSupabase(showResult=true,adminOverride=null){
+  const admin=(adminOverride!==null?adminOverride:(($('loginKey').value||state.adminKey||''))).trim();
+  if(!admin){const msg='请输入后台密钥后再进行连接诊断。';if(showResult)setLoginStatus(msg,'warn');throw new Error(msg);}
   let res;
-  try{res=await fetch(`${baseUrl()}/rest/v1/`,{method:'GET',cache:'no-store',headers:{'apikey':anonKey(),'Authorization':'Bearer '+anonKey()}});}
-  catch(err){const msg='无法访问 Supabase 项目地址。请检查网络、Project URL，或确认项目已恢复。';if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
-  if(res.status===401||res.status===403){const msg='Supabase 已响应，但 anon / publishable key 未通过校验。请从项目 Connect 或 Settings → API Keys 重新复制公开密钥。';if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
-  if(res.status>=500){const msg=`Supabase 项目暂不可用（${res.status}）。请稍后重试或查看项目状态。`;if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
-  if(!res.ok){const msg=`Supabase 项目地址返回 ${res.status}，请核对 Project URL。`;if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
-  if(showResult)setLoginStatus('Supabase 项目地址与公开密钥连接正常。下一步请校验后台接口。','ok');
-  return true;
+  try{
+    res=await fetch(`${baseUrl()}/rest/v1/rpc/xm_admin_list_invite_codes_mobile`,{
+      method:'POST',cache:'no-store',
+      headers:{'apikey':anonKey(),'Authorization':'Bearer '+anonKey(),'Content-Type':'application/json','Prefer':'return=representation'},
+      body:JSON.stringify({p_admin_key:admin})
+    });
+  }catch(err){const msg='无法访问 Supabase 项目。请检查网络、Project URL，或确认项目已恢复。';if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
+  const text=await res.text();let data=null;
+  try{data=text?JSON.parse(text):null;}catch{data=text;}
+  const detail=(data&&data.message)||String(data||'');
+  if(/Could not find the function|PGRST202|does not exist|schema cache/i.test(detail)){
+    const msg='手机后台接口尚未安装或尚未刷新。请确认 1.0.1 配套 SQL 已成功运行，并等待约 30 秒后重试。';if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);
+  }
+  if(res.status===401||res.status===403){
+    const msg=/invalid.*(api|key)|api key|apikey|jwt/i.test(detail)
+      ?'Supabase 已响应，但公开连接密钥未通过校验。请在“高级连接设置”中重新粘贴当前项目的 Publishable key。'
+      :'Supabase 已连接，但后台密钥未通过校验。请确认输入的是原后台密钥。';
+    if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);
+  }
+  if(res.status>=500){const msg=`Supabase 项目暂不可用（${res.status}）。请稍后重试。`;if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
+  if(!res.ok){const msg='Supabase 已连接，但后台校验未通过：'+(detail||`请求返回 ${res.status}`);if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
+  if(!Array.isArray(data)){const msg='后台接口已响应，但返回结果格式异常。请刷新页面后重试。';if(showResult)setLoginStatus(msg,'bad');throw new Error(msg);}
+  if(showResult)setLoginStatus('Supabase、公开连接密钥和后台接口均已通过校验。','ok');
+  return data;
 }
-async function testConnection(){setBusy(true,'正在诊断连接…');try{await probeSupabase(true);toast('基础连接正常。');}catch(err){toast(err.message,'bad');}finally{setBusy(false);}}
+async function testConnection(){setBusy(true,'正在诊断连接…');try{await probeSupabase(true);toast('云端连接正常。');}catch(err){toast(err.message,'bad');}finally{setBusy(false);}}
 async function rpc(name,params={},keyOverride=null){
   const key=keyOverride!==null?keyOverride:state.adminKey;
   const payload={p_admin_key:key,...params};
@@ -310,8 +329,7 @@ async function login(){
   if(!key){setLoginStatus('请输入后台密钥。','warn');return;}
   setBusy(true,'正在连接云端…');setLoginStatus('正在校验后台密钥…');
   try{
-    await probeSupabase(false);
-    const data=await rpc('xm_admin_list_invite_codes_mobile',{},key);
+    const data=await probeSupabase(false,key);
     if(!Array.isArray(data))throw new Error('后台校验未通过。');
     state.adminKey=key;state.codes=data;$('loginKey').value='';
     $('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');
